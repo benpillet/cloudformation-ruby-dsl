@@ -28,6 +28,7 @@ require 'erb'
 require 'aws-sdk'
 require 'diffy'
 require 'highline/import'
+require 'optparse'
 
 ############################# AWS SDK Support
 
@@ -85,23 +86,90 @@ def parse_args
     :region      => default_region,
     :profile     => nil,
     :nopretty    => false,
+    :verbose     => false,
   }
-  ARGV.slice_before(/^--/).each do |name, value|
-    case name
-    when '--stack-name'
+
+  def stack(opts, args)
+    opts.on("-sSTACK", "--stack-name=STACK", "Stack Name") { |v|
       args[:stack_name] = value
-    when '--parameters'
-      args[:parameters] = Hash[value.split(/;/).map { |pair| pair.split(/=/, 2) }]  #/# fix for syntax highlighting
-    when '--interactive'
-      args[:interactive] = true
-    when '--region'
-      args[:region] = value
-    when '--profile'
-      args[:profile] = value
-    when '--nopretty'
-      args[:nopretty] = true
+    }
+  end
+
+  def parameters(opts, args)
+    opts.on("-pPARAMETERS", "--parameters=PARAMETERS",
+      "Semicolon separated list of key=value pairs") do |v|
+      args[:parameters] = Hash[v.split(/;/).map { |pair| pair.split(/=/, 2) }]  #/# fix for syntax highlighting
     end
   end
+
+  def interactive(opts, args)
+    opts.on("-i", "--[no-]interactive") { |v| args[:interactive] = v }
+  end
+
+  def region(opts, args)
+    opts.on("-rREGION", "--region=REGION") { |v| args[:region] = v }
+  end
+
+  def profile(opts, args)
+    opts.on("-aPROFILE", '--profile=PROFILE') { |v| args[:profile] = v }
+  end
+
+  def nopretty(opts, args)
+    opts.on("-n", '--nopretty') { |v| args[:nopretty] = v}
+  end
+
+  subtext = <<HELP
+Commonly used command are:
+   expand:     does something awesome
+   diff:     does something fantastic
+   validate:
+   create:
+   update:
+   cancel-update:
+   delete:
+   describe:
+   describe-resource:
+   get-template:
+
+See '#{$PROGRAM_NAME} COMMAND --help' for more information on a specific command.
+HELP
+
+  global = OptionParser.new do |opts|
+    opts.banner = "Usage: #{$PROGRAM_NAME} [subcommand [options]]"
+    opts.separator ""
+    opts.separator subtext
+
+    opts.on_tail("-h", "--help", "Show this message") do
+      puts opts
+      exit
+    end
+    opts.on_tail("--version", "Show version") do
+      puts Cfn::Ruby::Dsl::VERSION
+      exit
+    end
+  end
+
+  subcommands = { 
+    'create' => OptionParser.new do |opts|
+      opts.banner = "Usage: create [options]"
+      stack(opts, args)
+      profile(opts, args)
+      region(opts, args)
+    end,
+    'delete' => OptionParser.new do |opts|
+      opts.banner = "Usage: delete [options]"
+      stack(opts, args)
+    end
+  }
+
+  global.order!
+  command = ARGV.shift
+  subcommands[command].order!
+
+  puts "Command: #{command} "
+  p args
+  puts "ARGV:"
+  p ARGV
 
   args
 end
