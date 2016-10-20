@@ -54,12 +54,13 @@ end
 
 # Core interpreter for the DSL
 class TemplateDSL < JsonObjectDSL
-  attr_reader :parameters,
+  attr_accessor :parameters,
               :parameter_cli,
               :aws_region,
               :nopretty,
               :stack_name,
               :aws_profile
+
 
   def initialize(options)
     @parameters  = options.fetch(:parameters, {})
