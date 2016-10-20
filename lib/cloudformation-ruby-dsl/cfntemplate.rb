@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require 'logger'
 require 'cloudformation-ruby-dsl/dsl'
+
+$logger = Logger.new STDOUT
+$logger.level = Logger::INFO
 
 unless RUBY_VERSION >= '1.9'
   # This script uses Ruby 1.9 functions such as Enumerable.slice_before and Enumerable.chunk
@@ -580,5 +584,6 @@ end
 # Main entry point
 def template(&block)
   options = parse_args
+  $logger.debug("options: #{options}")
   raw_template(options, &block)
 end
